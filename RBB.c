@@ -238,9 +238,20 @@ int main(int argc, char* argv[]){
 			workingNode = workingSpine->node;
 			
 //			next = createNode(i,1, current->value + cItem->value, current->room - cItem->weight, current->estimate, current, NULL, NULL, cItem);
+
+
 			printf("Begin for loop: init i @: %d\n",workingNode->index+1);
+
+/*** ERROR ***/
+/*** 
+*	For some reason, our for loop only ever runs ONCE - in other words, it always branches right, then stops.
+*	This is a bad problem, because we never venture down below a few levels, and our maxValue is always 0.
+*/
+
+
 			for (i = workingNode->index+1; i<totalItems;i++){
-				printf("In for loop, i: %i, index: %d\n",i,workingNode->index);
+
+				printf("In for loop, i: %i, index: %d, totalItems: %d\n",i,workingNode->index,totalItems);
 
 
 				workingItem = items[workingNode->index + 1];
