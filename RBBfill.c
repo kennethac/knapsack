@@ -1,314 +1,314 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-struct Item {
-	int index;
-	int value;
-	int weight;
-	float density;
-};
-
-struct Node {
-
-	int index;
-
-	int selected;
-	
-	int value;
-	int room;
-	float estimate;
-	
-	struct Node *last;
-	struct Node *left;
-	struct Node *right;
-
-	struct Item *item;
-};
-
-struct Bone {
-
-	struct Bone * last;
-	struct Bone * next; 
-		
-	struct Node * node;
-	
-};
-
-
-
-
-/**  Function for creating items - an initializer. Is this necessary?
-* See: http://stackoverflow.com/questions/8047261/what-does-dot-mean-in-a-struct-initializer
-**/
-struct Item *createItem(int index, int value, int weight, float density){
-//	printf("Creating item with density %d\n",density);
-	struct Item *item = (struct  Item *) malloc(sizeof(struct Item));
-	item->index = index;
-	item->value = value;
-	item->weight = weight;
-	item->density = density;
-	return item;  // Item is NOT freed!
 }
+	return 0;
+	printf("Success! MaxValue: %d\n",maxValue);		
 
-struct Node *createNode(int index, int selected, int value, int room, float estimate, struct Node *last, struct Node *left, struct Node *right, struct Item *item){
-	struct Node *node = (struct Node *) malloc(sizeof(struct Node));
-	node->index = index;
-	node->selected = selected;
-	node->value = value;
-	node->room = room;
-	node->estimate = estimate;
-	node->last = last;
-	node->left = left;
-	node->right = right;
-	node->item = item;
-	return node;
-}
-
-struct Bone *createBone(struct Bone *last,struct Bone *next, struct Node * node){
-	struct Bone *bone = (struct Bone *) malloc(sizeof(struct Bone));
-	bone->last = last;
-	bone->next = next;
-	printf("Bone created, node->value: %d\n",node->value);
-	bone->node = node;
-	return bone;
-}
-
-int maxInt(int a, int b){
-	if (a > b){
-		return a;
-	} else {
-		return b;
+	free(base);
 	}
-}
+		free(items[i]);
+//		printf("%f\n",items[i]->density);
+	for (i = 0;i<totalItems;i++){
+	i = 0;
+	/* Cleanup */
 
 
-int main(int argc, char* argv[]){
-	
-	printf("Starting the function?\n");
-	
-	int i;
-	char *strtolError;
-
-	if (!(argc>1)){
-		printf("Not enough args!\n");
-		exit(1);
 	}
-
-	char* fileLoc = argv[1];
-	FILE* file = fopen(fileLoc,"r");
-	if (file == NULL){
-		printf("File invalid!\n");
-		exit(2);
-	}
-	char line[10000];
-	char *saveptr;
-
-	fgets(line, sizeof(line),file);
-	//printf("%s",line);
-	float optValue = strtof(line,NULL);
-//	printf("Opt Value: %f\n",optValue);
-
-	fgets(line,sizeof(line),file);
-	int capacity = strtof(line,NULL);
-
-	fgets(line, sizeof(line), file);
-	int totalItems = strtol(line,&strtolError,10);
-	struct Item *items[totalItems];// = (struct Item *) malloc(sizeof(struct Item)*totalItems);
-
-	int itemCount = 0;
-
-	/* Scan all items into the items[] array. */
-	while (fgets(line, sizeof(line), file)) {
-		char* thisIndex;
-		char* thisValue;
-		char* thisWeight;
-		char* thisDensity;
-			
-		int intIndex;
-		int intValue;
-		int intWeight;
-		float intDensity;
-
-		thisIndex = strtok_r(line, " ", &saveptr);
-		thisValue = strtok_r(NULL, " ", &saveptr);
-		thisWeight = strtok_r(NULL, " ", &saveptr);
-		thisDensity = strtok_r(NULL, " ", &saveptr);
-		saveptr = NULL;
-
-		intIndex = strtol(thisIndex, &strtolError,10);
-		printf("%s\n",thisValue);
-		intValue = strtol(thisValue,&strtolError,10);
-
-		intWeight = strtol(thisWeight,&strtolError,10);
-		intDensity = strtof(thisDensity,NULL);
-
-
-		//printf("intIndex: %d\n",intIndex);
-		//printf("intValue: %d\n",intValue);
-		//printf("intWeight: %d\n", intWeight);
-		//printf("intDensity: %f\n",intDensity);
-
-		struct Item *thisItem = createItem(intIndex, intValue, intWeight, intDensity);
-		items[itemCount] = thisItem;	
-		itemCount++;
-	};
-
-	if ((itemCount) != totalItems){
-		//printf("Error scanning all our items! We only got %i.\n",itemCount+1);
-		exit(3);
-	}
-
-	/** Ready to make the TREE! **/
-
-	struct Node *base = createNode(-1,0,0,capacity,optValue,NULL,NULL,NULL,NULL);
-	struct Node *current = base;
-	struct Node *next;
-//	printf("%d\n",base->room);
-	int maxValue = 0;
-
-	struct Bone *spineBase = createBone(NULL, NULL, base);
-	struct Bone *currentSpine = spineBase;
-
-	/* Wave 1 - to get first value and to set up 'vertebrae' */
-	for (i = 0; i<totalItems;i++){
-		struct Item *cItem = items[i];
-		next = createNode(i,1, current->value + cItem->value, current->room - cItem->weight, current->estimate, current, NULL, NULL, cItem);
-
-
-		if ( next->room < 0){ // We're out of room with this item! Don't continue. 
-//			printf("Overflowed with failed value: %i, old value: %i\n",(int)(current->estimate),(int)(maxInt));
-			printf("Overflowed: %d\n",next->room);
-
-			free(next); // This is no longer needed.
-			break; // stop looping through the items.
-		} else { // There is room still - add the item.
-			if(i ==totalItems-1) { // must be on last leaf to actually change the value...
-				maxValue = maxInt(current->estimate, maxValue);
-				printf("\n###\nActually updated maxValue: %d\n###\n",maxValue);
-			}
-
-
-			current->left = next; // Add the node to the tree. 
-			next->last = current; // Remember its parent...
-			current = next; // Move down the tree.			
-
-			struct Bone * vert = createBone(currentSpine, NULL, current); // Create a new vertebra....
-			currentSpine->next = vert; // Add it to the spine...
-			currentSpine = vert; // make it the new currentSpine;
-
-			printf("New spine, node with room: %i\n",currentSpine->node->room);
 		}
-	}
+			}		
+				}	
+					
+					}
+						printf("Reached the bottom, no new spine: %d & %d\n",workingNode->index, totalItems);
+					} else {
+
+						printf("New spine, level: %d\n",workingNode->index);
+						currentSpine = vert;
+						currentSpine->next = vert;
+						struct Bone * vert = createBone(currentSpine, NULL, workingNode);
+						printf("\n!!!\nDo I ever get called?\n!!!\n");
+					if ((workingNode->index != totalItems-1)&&(workingNode->selected==1)){ // Is this correct?
+					printf("Working node selected: %d\n",workingNode->selected);
+					// Add a new spine at this node, if not at bottom - and we didn't take a right!
+
+					workingNode = next; // Move down the tree. 
+					next->last = workingNode;
+					}
+						workingNode->left = next;
+					} else {
+						workingNode->right = next;
+					if ( next->selected == 0){ // Add the node in the right direction.
+
+					}
+						printf("\n###\nActually updated maxValue: %d\n###\n",maxValue);
+						maxValue = maxInt(next->estimate, maxValue); 
+					if ( next->index == totalItems-1) { // must be on last level to actually change max value.
+					
+					printf("Index: %d, totalItems %d\n###\n",workingNode->index,totalItems);
+					printf("Value: %d, room: %d\n",workingNode->value,workingNode->room);
+				} else { // We can continue.
+					break;
+					free(next);
+					printf("Not adding, estimate (%f), less than maxValue (%d)\n",next->estimate,maxValue);
+				} else if (next->estimate < maxValue){ // We don't need to continue, we're too low!
+					break; // Stop looping from here - hopefully this doesn't stop the while loop?
+					free(next);
+
+					printf("Overflowed in vertebra: %d\n",next->room);
+				if ( next->room < 0){ // If we've overflowed - only a problem if we've gone left, perhaps we should add the check there?
+				printf("Before conditional: value: %d, room: %d, estimate: %f, maxValue: %d\n",next->value,next->room,next->estimate,maxValue);
 
 
-	printf("Starting 'second wave'\n");
-	/** We should now have a max value for the all left branch, as well as have built a spine.
-	* So, going backwards through the spine linked list (until we reach the base - current->last == NULL) 
-	* remove the vertebra
-	* If the vertebra's node is still feasible: 
-	* Go ONE right from each vert and then go left all the way ('til non feasible) Adding vertebrae as we go as needed...
-	* ETc etc.
-	*/ 
 
-	struct Bone *workingSpine;
-	struct Node *workingNode;
-	struct Item *workingItem;
-	
-	printf("spineBase->value: %d\n",spineBase->node->value);
-
-	struct Bone *dummySpine = createBone(NULL, NULL, base);
-	spineBase->last = dummySpine;
-
-
-	while (currentSpine->last != NULL){ // While we still have spine..
-
-		printf("\n$$$\n$$$\nWe begin at: %d\n$$$\n$$$\n",currentSpine->node->index);
-
-
-		workingSpine = currentSpine; // Use it wto work with
-		currentSpine = workingSpine->last; // Effectively remove it.
-		if (currentSpine != NULL){
-			currentSpine->next = NULL;
-		}
-
-//		printf("This is a check to make sure we continue after an overflow in vertebra.");
-		if (currentSpine->node->estimate >= maxValue){ // We only need to use the vertebra if its estimate is feasible.
-
-			workingNode = workingSpine->node;
-			
-//			next = createNode(i,1, current->value + cItem->value, current->room - cItem->weight, current->estimate, current, NULL, NULL, cItem);
-			printf("Begin for loop: init i @: %d\n",workingNode->index+1);
-			for (i = workingNode->index+1; i<totalItems;i++){
-				printf("In for loop, i: %i, index: %d\n",i,workingNode->index);
-
+				}
+					next = createNode(workingNode->index+1,1,workingNode->value + workingItem->value, workingNode->room-workingItem->weight,workingNode->estimate,workingNode, NULL, NULL, workingItem);
+					printf("\n\nThis is gettin' called!\n\n");
+				} else { // Else left.
+					next = createNode(workingNode->index+1,0,workingNode->value, workingNode->room, workingNode->estimate-workingItem->value,workingNode, NULL, NULL, workingItem);
+					printf("Creating a left node: i: %d, index: %d\n",i,workingNode->index);
+				if (i == ((workingNode->index)+1)){ // We need to go right...
 
 				workingItem = items[workingNode->index + 1];
 
-				if (i == ((workingNode->index)+1)){ // We need to go right...
-					printf("Creating a left node: i: %d, index: %d\n",i,workingNode->index);
-					next = createNode(workingNode->index+1,0,workingNode->value, workingNode->room, workingNode->estimate-workingItem->value,workingNode, NULL, NULL, workingItem);
-				} else { // Else left.
-					printf("\n\nThis is gettin' called!\n\n");
-					next = createNode(workingNode->index+1,1,workingNode->value + workingItem->value, workingNode->room-workingItem->weight,workingNode->estimate,workingNode, NULL, NULL, workingItem);
-				}
 
+				printf("In for loop, i: %i, index: %d\n",i,workingNode->index);
+			for (i = workingNode->index+1; i<totalItems;i++){
+			printf("Begin for loop: init i @: %d\n",workingNode->index+1);
+//			next = createNode(i,1, current->value + cItem->value, current->room - cItem->weight, current->estimate, current, NULL, NULL, cItem);
+			
+			workingNode = workingSpine->node;
 
+		if (currentSpine->node->estimate >= maxValue){ // We only need to use the vertebra if its estimate is feasible.
+//		printf("This is a check to make sure we continue after an overflow in vertebra.");
 
-				printf("Before conditional: value: %d, room: %d, estimate: %f, maxValue: %d\n",next->value,next->room,next->estimate,maxValue);
-				if ( next->room < 0){ // If we've overflowed - only a problem if we've gone left, perhaps we should add the check there?
-					printf("Overflowed in vertebra: %d\n",next->room);
-
-					free(next);
-					break; // Stop looping from here - hopefully this doesn't stop the while loop?
-				} else if (next->estimate < maxValue){ // We don't need to continue, we're too low!
-					printf("Not adding, estimate (%f), less than maxValue (%d)\n",next->estimate,maxValue);
-					free(next);
-					break;
-				} else { // We can continue.
-					printf("Value: %d, room: %d\n",workingNode->value,workingNode->room);
-					printf("Index: %d, totalItems %d\n###\n",workingNode->index,totalItems);
-					
-					if ( next->index == totalItems-1) { // must be on last level to actually change max value.
-						maxValue = maxInt(next->estimate, maxValue); 
-						printf("\n###\nActually updated maxValue: %d\n###\n",maxValue);
-					}
-
-					if ( next->selected == 0){ // Add the node in the right direction.
-						workingNode->right = next;
-					} else {
-						workingNode->left = next;
-					}
-					next->last = workingNode;
-					workingNode = next; // Move down the tree. 
-
-					// Add a new spine at this node, if not at bottom - and we didn't take a right!
-					printf("Working node selected: %d\n",workingNode->selected);
-					if ((workingNode->index != totalItems-1)&&(workingNode->selected==1)){ // Is this correct?
-						printf("\n!!!\nDo I ever get called?\n!!!\n");
-						struct Bone * vert = createBone(currentSpine, NULL, workingNode);
-						currentSpine->next = vert;
-						currentSpine = vert;
-						printf("New spine, level: %d\n",workingNode->index);
-
-					} else {
-						printf("Reached the bottom, no new spine: %d & %d\n",workingNode->index, totalItems);
-					}
-					
-				}	
-			}		
 		}
+			currentSpine->next = NULL;
+		if (currentSpine != NULL){
+		currentSpine = workingSpine->last; // Effectively remove it.
+		workingSpine = currentSpine; // Use it wto work with
+
+
+		printf("\n$$$\n$$$\nWe begin at: %d\n$$$\n$$$\n",currentSpine->node->index);
+
+	while (currentSpine->last != NULL){ // While we still have spine..
+
+
+	spineBase->last = dummySpine;
+	struct Bone *dummySpine = createBone(NULL, NULL, base);
+
+	printf("spineBase->value: %d\n",spineBase->node->value);
+	
+	struct Item *workingItem;
+	struct Node *workingNode;
+	struct Bone *workingSpine;
+
+	*/ 
+	* ETc etc.
+	* Go ONE right from each vert and then go left all the way ('til non feasible) Adding vertebrae as we go as needed...
+	* If the vertebra's node is still feasible: 
+	* remove the vertebra
+	* So, going backwards through the spine linked list (until we reach the base - current->last == NULL) 
+	/** We should now have a max value for the all left branch, as well as have built a spine.
+	printf("Starting 'second wave'\n");
+
+
 	}
+		}
+			printf("New spine, node with room: %i\n",currentSpine->node->room);
+
+			currentSpine = vert; // make it the new currentSpine;
+			currentSpine->next = vert; // Add it to the spine...
+			struct Bone * vert = createBone(currentSpine, NULL, current); // Create a new vertebra....
+
+			current = next; // Move down the tree.			
+			next->last = current; // Remember its parent...
+			current->left = next; // Add the node to the tree. 
 
 
-	/* Cleanup */
-	i = 0;
-	for (i = 0;i<totalItems;i++){
-//		printf("%f\n",items[i]->density);
-		free(items[i]);
+			}
+				printf("\n###\nActually updated maxValue: %d\n###\n",maxValue);
+				maxValue = maxInt(current->estimate, maxValue);
+			if(i ==totalItems-1) { // must be on last leaf to actually change the value...
+		} else { // There is room still - add the item.
+			break; // stop looping through the items.
+			free(next); // This is no longer needed.
+
+			printf("Overflowed: %d\n",next->room);
+//			printf("Overflowed with failed value: %i, old value: %i\n",(int)(current->estimate),(int)(maxInt));
+		if ( next->room < 0){ // We're out of room with this item! Don't continue. 
+
+
+		next = createNode(i,1, current->value + cItem->value, current->room - cItem->weight, current->estimate, current, NULL, NULL, cItem);
+		struct Item *cItem = items[i];
+	for (i = 0; i<totalItems;i++){
+	/* Wave 1 - to get first value and to set up 'vertebrae' */
+
+	struct Bone *currentSpine = spineBase;
+	struct Bone *spineBase = createBone(NULL, NULL, base);
+
+	int maxValue = 0;
+//	printf("%d\n",base->room);
+	struct Node *next;
+	struct Node *current = base;
+	struct Node *base = createNode(-1,0,0,capacity,optValue,NULL,NULL,NULL,NULL);
+
+	/** Ready to make the TREE! **/
+
 	}
-	free(base);
+		exit(3);
+		//printf("Error scanning all our items! We only got %i.\n",itemCount+1);
+	if ((itemCount) != totalItems){
 
-	printf("Success! MaxValue: %d\n",maxValue);		
-	return 0;
+	};
+		itemCount++;
+		items[itemCount] = thisItem;	
+		struct Item *thisItem = createItem(intIndex, intValue, intWeight, intDensity);
+
+		//printf("intDensity: %f\n",intDensity);
+		//printf("intWeight: %d\n", intWeight);
+		//printf("intValue: %d\n",intValue);
+		//printf("intIndex: %d\n",intIndex);
+
+
+		intDensity = strtof(thisDensity,NULL);
+		intWeight = strtol(thisWeight,&strtolError,10);
+
+		intValue = strtol(thisValue,&strtolError,10);
+		printf("%s\n",thisValue);
+		intIndex = strtol(thisIndex, &strtolError,10);
+
+		saveptr = NULL;
+		thisDensity = strtok_r(NULL, " ", &saveptr);
+		thisWeight = strtok_r(NULL, " ", &saveptr);
+		thisValue = strtok_r(NULL, " ", &saveptr);
+		thisIndex = strtok_r(line, " ", &saveptr);
+
+		float intDensity;
+		int intWeight;
+		int intValue;
+		int intIndex;
+			
+		char* thisDensity;
+		char* thisWeight;
+		char* thisValue;
+		char* thisIndex;
+	while (fgets(line, sizeof(line), file)) {
+	/* Scan all items into the items[] array. */
+
+	int itemCount = 0;
+
+	struct Item *items[totalItems];// = (struct Item *) malloc(sizeof(struct Item)*totalItems);
+	int totalItems = strtol(line,&strtolError,10);
+	fgets(line, sizeof(line), file);
+
+	int capacity = strtof(line,NULL);
+	fgets(line,sizeof(line),file);
+
+//	printf("Opt Value: %f\n",optValue);
+	float optValue = strtof(line,NULL);
+	//printf("%s",line);
+	fgets(line, sizeof(line),file);
+
+	char *saveptr;
+	char line[10000];
+	}
+		exit(2);
+		printf("File invalid!\n");
+	if (file == NULL){
+	FILE* file = fopen(fileLoc,"r");
+	char* fileLoc = argv[1];
+
+	}
+		exit(1);
+		printf("Not enough args!\n");
+	if (!(argc>1)){
+
+	char *strtolError;
+	int i;
+	
+	printf("Starting the function?\n");
+	
+int main(int argc, char* argv[]){
+
+
 }
+	}
+		return b;
+	} else {
+		return a;
+	if (a > b){
+int maxInt(int a, int b){
+
+}
+	return bone;
+	bone->node = node;
+	printf("Bone created, node->value: %d\n",node->value);
+	bone->next = next;
+	bone->last = last;
+	struct Bone *bone = (struct Bone *) malloc(sizeof(struct Bone));
+struct Bone *createBone(struct Bone *last,struct Bone *next, struct Node * node){
+
+}
+	return node;
+	node->item = item;
+	node->right = right;
+	node->left = left;
+	node->last = last;
+	node->estimate = estimate;
+	node->room = room;
+	node->value = value;
+	node->selected = selected;
+	node->index = index;
+	struct Node *node = (struct Node *) malloc(sizeof(struct Node));
+struct Node *createNode(int index, int selected, int value, int room, float estimate, struct Node *last, struct Node *left, struct Node *right, struct Item *item){
+
+}
+	return item;  // Item is NOT freed!
+	item->density = density;
+	item->weight = weight;
+	item->value = value;
+	item->index = index;
+	struct Item *item = (struct  Item *) malloc(sizeof(struct Item));
+//	printf("Creating item with density %d\n",density);
+struct Item *createItem(int index, int value, int weight, float density){
+**/
+* See: http://stackoverflow.com/questions/8047261/what-does-dot-mean-in-a-struct-initializer
+/**  Function for creating items - an initializer. Is this necessary?
+
+
+
+
+};
+	
+	struct Node * node;
+		
+	struct Bone * next; 
+	struct Bone * last;
+
+struct Bone {
+
+};
+	struct Item *item;
+
+	struct Node *right;
+	struct Node *left;
+	struct Node *last;
+	
+	float estimate;
+	int room;
+	int value;
+	
+	int selected;
+
+	int index;
+
+struct Node {
+
+};
+	float density;
+	int weight;
+	int value;
+	int index;
+struct Item {
+
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
